@@ -3,13 +3,14 @@ using System;
 using System.Collections.Generic;
 using TuSharePro.Models.Request;
 using TuSharePro.Models.Response;
+using Security.DataModels;
 
 namespace TuSharePro
 {
     public class CoreApi
     {
         private string token = null;
-        public const string url = "http://api.tushare.pro";
+        public const string url = "http://api.tushare.pro"; //DevSkim: ignore DS137138
 
         public CoreApi(string token)
         {
@@ -17,7 +18,7 @@ namespace TuSharePro
         }
         public CoreApi()
         {
-            
+
         }
         public string Token { get => token; set => token = value; }
 
@@ -45,18 +46,18 @@ namespace TuSharePro
                     api_name = "daily",
                     paramsList = paramsList
                 };
-                string json = JsonConvert.SerializeObject(request, 
+                string json = JsonConvert.SerializeObject(request,
                     new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore
-                });
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
                 return request.Request<_BaseResponse>(url, json);
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
-            
+
         }
 
         /// <summary>
@@ -91,7 +92,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -128,7 +129,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -165,7 +166,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -202,7 +203,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -239,7 +240,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -252,15 +253,55 @@ namespace TuSharePro
         /// <param name="is_hs"></param>
         /// <param name="list_status"></param>
         /// <param name="exchange"></param>
-        public _BaseResponse stock_basic(string is_hs, string list_status, string exchange)
+        public ChinaStockInfoResponse stock_basic(IsHS? is_hs = null, StockStatus list_status = StockStatus.Listing, Exchange? exchange = null)
         {
             try
             {
                 Dictionary<string, string> paramsList = new Dictionary<string, string>();
-                paramsList.Add("is_hs", is_hs);
-                paramsList.Add("list_status", list_status);
-                paramsList.Add("exchange", exchange);
-                
+                switch (is_hs)
+                {
+                    case IsHS.N:
+                        paramsList.Add("is_hs", "N");
+                        break;
+                    case IsHS.H:
+                        paramsList.Add("is_hs", "H");
+                        break;
+                    case IsHS.S:
+                        paramsList.Add("is_hs", "S");
+                        break;
+                    default:
+                        break;
+                }
+                switch (list_status)
+                {
+                    case StockStatus.Listing:
+                        paramsList.Add("list_status", "L");
+                        break;
+                    case StockStatus.Delisting:
+                        paramsList.Add("list_status", "D");
+                        break;
+                    case StockStatus.Pause:
+                        paramsList.Add("list_status", "P");
+                        break;
+                    default:
+                        break;
+                }
+                switch (exchange)
+                {
+                    case Exchange.SSE:
+                        paramsList.Add("exchange", "SSE");
+                        break;
+                    case Exchange.SZSE:
+                        paramsList.Add("exchange", "SZSE");
+                        break;
+                    case Exchange.HKEX:
+                        paramsList.Add("exchange", "HKEX");
+                        break;
+                    default:
+                        break;
+                }
+
+
                 StockBasicRequest request = new StockBasicRequest
                 {
                     token = Token,
@@ -272,30 +313,32 @@ namespace TuSharePro
                     {
                         NullValueHandling = NullValueHandling.Ignore
                     });
-                return request.Request<_BaseResponse>(url, json);
+                var datas =  request.Request<ChinaStockInfoResponse>(url, json);
+                datas.CurrentStockStatus = list_status;
+                return datas;
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new ChinaStockInfoResponse() { Code = -1, Message = ex.Message };
             }
         }
 
         /// <summary>
         /// 市场信息-交易日历
         /// </summary>
-        /// <param name="exchange"></param>
+        /// <param name="exchange">交易所</param>
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
         /// <param name="is_open"></param>
-        public _BaseResponse trade_cal(string exchange, string start_date, string end_date,string is_open)
+        public TradeCalendarResponse trade_cal(Exchange exchange = Exchange.SSE, DateTime? start_date = null, DateTime? end_date = null, bool is_open = true)
         {
             try
             {
                 Dictionary<string, string> paramsList = new Dictionary<string, string>();
-                paramsList.Add("exchange", exchange);
-                paramsList.Add("start_date", start_date);
-                paramsList.Add("end_date", end_date);
-                paramsList.Add("is_open", is_open);
+                paramsList.Add("exchange", exchange.ToString());
+                paramsList.Add("start_date", start_date.HasValue ? start_date.Value.ToString("yyyyMMdd") : "");
+                paramsList.Add("end_date", end_date.HasValue ? end_date.Value.ToString("yyyyMMdd") : "");
+                paramsList.Add("is_open", is_open == true ? "1" : "0");
                 TradeCalRequest request = new TradeCalRequest
                 {
                     token = Token,
@@ -307,11 +350,11 @@ namespace TuSharePro
                     {
                         NullValueHandling = NullValueHandling.Ignore
                     });
-                return request.Request<_BaseResponse>(url, json);
+                return request.Request<TradeCalendarResponse>(url, json);
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new TradeCalendarResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -344,7 +387,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -374,7 +417,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -406,7 +449,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -439,7 +482,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -475,7 +518,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -511,7 +554,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -547,7 +590,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -583,7 +626,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -602,7 +645,7 @@ namespace TuSharePro
                 paramsList.Add("ts_code", ts_code);
                 paramsList.Add("suspend_date", suspend_date);
                 paramsList.Add("resume_date", resume_date);
-                
+
                 SuspendRequest request = new SuspendRequest
                 {
                     token = Token,
@@ -618,7 +661,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -663,7 +706,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -706,7 +749,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -749,7 +792,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -790,7 +833,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -829,7 +872,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -868,7 +911,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -907,7 +950,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -946,7 +989,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -985,7 +1028,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1022,7 +1065,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1059,7 +1102,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1073,7 +1116,7 @@ namespace TuSharePro
         /// <param name="end_date"></param>
         /// <param name="market_type"></param>
 
-        public _BaseResponse hsgt_top10(string ts_code,string trade_date, string start_date, string end_date,string market_type)
+        public _BaseResponse hsgt_top10(string ts_code, string trade_date, string start_date, string end_date, string market_type)
         {
             try
             {
@@ -1099,7 +1142,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1139,7 +1182,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1177,7 +1220,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1215,7 +1258,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1255,7 +1298,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1295,7 +1338,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1329,7 +1372,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1363,7 +1406,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1395,7 +1438,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1427,7 +1470,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1439,7 +1482,7 @@ namespace TuSharePro
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
 
-        public _BaseResponse repurchase(string ann_date,string start_date, string end_date)
+        public _BaseResponse repurchase(string ann_date, string start_date, string end_date)
         {
             try
             {
@@ -1463,7 +1506,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1494,7 +1537,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1504,7 +1547,7 @@ namespace TuSharePro
         /// </summary>
         /// <param name="id"></param>
         /// <param name="ts_code"></param>
-        public _BaseResponse concept_detail(string id,string ts_code)
+        public _BaseResponse concept_detail(string id, string ts_code)
         {
             try
             {
@@ -1527,7 +1570,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1566,7 +1609,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1604,7 +1647,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1615,7 +1658,7 @@ namespace TuSharePro
         /// <param name="date"></param>
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
-        public _BaseResponse stk_account(string date,  string start_date, string end_date)
+        public _BaseResponse stk_account(string date, string start_date, string end_date)
         {
             try
             {
@@ -1639,7 +1682,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1672,7 +1715,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1709,7 +1752,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1750,7 +1793,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1787,7 +1830,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1824,7 +1867,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1861,7 +1904,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1896,7 +1939,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1931,7 +1974,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1964,7 +2007,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -1993,7 +2036,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2003,7 +2046,7 @@ namespace TuSharePro
         /// </summary>
         /// <param name="market"></param>
         /// <param name="end_date"></param>
-        public _BaseResponse fund_nav(string ts_code,string end_date)
+        public _BaseResponse fund_nav(string ts_code, string end_date)
         {
             try
             {
@@ -2026,7 +2069,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2038,7 +2081,7 @@ namespace TuSharePro
         /// <param name="ex_date"></param>
         /// <param name="pay_date"></param>
         /// <param name="ts_code"></param>
-        public _BaseResponse fund_div(string ann_date, string ex_date,string pay_date, string ts_code)
+        public _BaseResponse fund_div(string ann_date, string ex_date, string pay_date, string ts_code)
         {
             try
             {
@@ -2063,7 +2106,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2094,7 +2137,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2106,7 +2149,7 @@ namespace TuSharePro
         /// <param name="trade_date"></param>
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
-        public _BaseResponse fund_daily(string ts_code,string trade_date,string start_date,string end_date)
+        public _BaseResponse fund_daily(string ts_code, string trade_date, string start_date, string end_date)
         {
             try
             {
@@ -2131,7 +2174,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2166,7 +2209,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2189,7 +2232,7 @@ namespace TuSharePro
                 paramsList.Add("exchange", exchange);
                 paramsList.Add("start_date", start_date);
                 paramsList.Add("end_date", end_date);
-                
+
                 FutDailyRequest request = new FutDailyRequest
                 {
                     token = Token,
@@ -2205,7 +2248,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2218,7 +2261,7 @@ namespace TuSharePro
         /// <param name="exchange"></param>
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
-        public _BaseResponse fut_holding(string trade_date, string symbol,  string start_date, string end_date, string exchange)
+        public _BaseResponse fut_holding(string trade_date, string symbol, string start_date, string end_date, string exchange)
         {
             try
             {
@@ -2244,7 +2287,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
 
         }
@@ -2283,7 +2326,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2321,7 +2364,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
         #endregion
@@ -2357,7 +2400,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2369,7 +2412,7 @@ namespace TuSharePro
         /// <param name="exchange"></param>
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
-        public _BaseResponse opt_daily( string ts_code, string trade_date, string start_date, string end_date, string exchange)
+        public _BaseResponse opt_daily(string ts_code, string trade_date, string start_date, string end_date, string exchange)
         {
             try
             {
@@ -2395,7 +2438,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
         #endregion
@@ -2415,7 +2458,7 @@ namespace TuSharePro
                 paramsList.Add("exchange", exchange);
                 paramsList.Add("classify", classify);
                 paramsList.Add("ts_code", ts_code);
-                
+
 
                 FxObasicRequest request = new FxObasicRequest
                 {
@@ -2432,7 +2475,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2471,7 +2514,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
         #endregion
@@ -2507,7 +2550,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2518,7 +2561,7 @@ namespace TuSharePro
         /// <param name="start_date"></param>
         /// <param name="end_date"></param>
         /// <param name="bank"></param>
-        public _BaseResponse shibor_quote(string date, string start_date, string end_date,string bank)
+        public _BaseResponse shibor_quote(string date, string start_date, string end_date, string bank)
         {
             try
             {
@@ -2543,7 +2586,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2577,7 +2620,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2613,7 +2656,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2647,7 +2690,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2681,7 +2724,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2715,7 +2758,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
         #endregion
@@ -2752,7 +2795,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2782,7 +2825,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
 
@@ -2820,7 +2863,7 @@ namespace TuSharePro
             }
             catch (Exception ex)
             {
-                return new _BaseResponse() { code = -1, msg = ex.Message };
+                return new _BaseResponse() { Code = -1, Message = ex.Message };
             }
         }
         #endregion
